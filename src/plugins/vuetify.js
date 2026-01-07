@@ -20,7 +20,7 @@ export const vuetify = createVuetify({
           primary: "#3dae2f",
           secondary: "#f0f9ef",
           surface: "#FFFBFE",
-          background: "#FFFBFE",
+          background: "#f4f5f6",
         },
       },
     },
