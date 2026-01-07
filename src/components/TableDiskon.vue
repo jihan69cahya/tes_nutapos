@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
-import { useSnackbar } from '../composables/useSnackbar';
+import { useSnackbar } from '../composables/useSnackBar';
 import DiskonModal from '../components/DiskonModal.vue';
 import ConfirmDeleteModal from '../components/ConfirmDeleteModal.vue'
 
