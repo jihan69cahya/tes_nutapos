@@ -22,6 +22,7 @@
 </template>
 
 <script setup>
+// Menerima data boolean untuk show modal konfirmasi
 defineProps({
   show: Boolean,
   discountName: String

@@ -15,7 +15,6 @@
 
       <v-card-text class="pa-4">
         <v-form ref="form" @submit.prevent="handleSubmit">
-          <!-- Nama Diskon -->
           <div class="mb-4">
             <label class="text-subtitle-2 mb-2 d-block">Nama Diskon</label>
             <v-text-field
@@ -27,7 +26,6 @@
               hide-details="auto"></v-text-field>
           </div>
 
-          <!-- Diskon -->
           <div>
             <label class="text-subtitle-2 mb-2 d-block">Diskon</label>
             <div class="d-flex align-center ga-2">
@@ -79,6 +77,7 @@ const dialog = ref(false)
 const form = ref(null)
 const diskonType = ref('persen')
 
+// Menerima data diskon untuk validasi nama diskon UNIK
 const props = defineProps({
   existingDiscounts: {
     type: Array,
@@ -98,6 +97,7 @@ const errors = reactive({
   diskon: ''
 })
 
+// Validasi form required dan duplikat nama diskon
 const validateForm = () => {
   let isValid = true
   
@@ -108,7 +108,6 @@ const validateForm = () => {
     errors.namaDiskon = 'Nama diskon tidak boleh kosong.'
     isValid = false
   } else {
-    // Check duplicate
     const isDuplicate = props.existingDiscounts.some(
       discount => discount.nama_diskon.toLowerCase() === formData.namaDiskon.trim().toLowerCase()
     )
@@ -127,6 +126,7 @@ const validateForm = () => {
   return isValid
 }
 
+// Fungsi untuk menghandle submit dari form
 const handleSubmit = () => {
   if (validateForm()) {
     const result = {

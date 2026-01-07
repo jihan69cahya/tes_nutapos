@@ -14,12 +14,12 @@ const deleting = ref(false)
 const searchQuery = ref('')
 const { showSnackbar } = useSnackbar();
 
-// API URL Configuration
 const showApiConfig = ref(false)
 const apiUrlInput = ref('')
 const selectedApi = ref('Kopi Anak Bangsa')
 const baseUrl = ref(import.meta.env.VITE_API_BASE_URL)
 
+// Inisialisasi header untuk tabel
 const headers = [
   { title: '', key: 'checkbox', sortable: false, width: '50px' },
   { title: 'Nama Diskon', key: 'nama', sortable: true },
@@ -27,7 +27,7 @@ const headers = [
   { title: '', key: 'actions', sortable: false, align: 'end' }
 ]
 
-// LOGIKA FILTER SEARCH
+// Fungsi untuk searching nama diskon
 const filteredItems = computed(() => {
   if (!searchQuery.value || searchQuery.value.trim() === '') {
     return items.value
@@ -41,6 +41,7 @@ const filteredItems = computed(() => {
   })
 })
 
+// Fungsi untuk mendeteksi apakah semua checkbox tercentang
 const allSelected = computed({
   get: () => selected.value.length === filteredItems.value.length && filteredItems.value.length > 0,
   set: (value) => {
@@ -48,10 +49,12 @@ const allSelected = computed({
   }
 })
 
+// Fungsi untuk menandai checkbox dicentang sebagian
 const someSelected = computed(() => 
   selected.value.length > 0 && selected.value.length < filteredItems.value.length
 )
 
+// Format nilai untuk kolom diskon tabel
 const formatNilai = (diskon, tipe) => {
   if (tipe === 'rupiah') {
     return `Rp ${diskon.toLocaleString('id-ID')}`
@@ -61,6 +64,7 @@ const formatNilai = (diskon, tipe) => {
   return '-'
 }
 
+// Fungsi untuk menampilkan form api url
 const handleApiChange = () => {
   showApiConfig.value = !showApiConfig.value
   if (showApiConfig.value) {
@@ -68,6 +72,7 @@ const handleApiChange = () => {
   }
 }
 
+// FUngsi untuk memproses submit api url
 const applyApiUrl = async () => {
   if (!apiUrlInput.value.trim()) {
     showSnackbar('URL API tidak boleh kosong', 'error')
@@ -78,10 +83,10 @@ const applyApiUrl = async () => {
   showApiConfig.value = false
   showSnackbar('URL API berhasil diubah', 'success')
   
-  // Refresh data dengan URL baru
   await fetchData()
 }
 
+// Fungsi get data tabel
 const fetchData = async () => {
   loading.value = true
   try {
@@ -94,7 +99,7 @@ const fetchData = async () => {
     const data = await response.json()
     discounts.value = data 
     
-    // Cari data dengan created_at terbaru
+    // Menandai data diskon terbaru
     let latestCreatedAt = null
     if (data.length > 0) {
       latestCreatedAt = data.reduce((latest, item) => {
@@ -103,7 +108,6 @@ const fetchData = async () => {
       }, null)
     }
     
-    // Transform data dari API ke format yang dibutuhkan
     items.value = data.map(item => ({
       id: item._id,
       nama: item.nama_diskon,
@@ -123,30 +127,22 @@ const fetchData = async () => {
   }
 }
 
+// Fungsi untuk post data ke API (simpan data)
 const handleSaveDiskon = async (data) => {
   try {
-    // Format data sesuai API
     const payload = {
       nama_diskon: data.namaDiskon,
       diskon: data.diskon.toString(),
       tipe: data.type,
       created_at: new Date().toISOString().slice(0, 19).replace('T', ' ')
     }
-
-    console.log('Payload yang dikirim:', payload)
-
-    // POST ke API
     const response = await axios.post(baseUrl.value, payload)
 
-    console.log('Response dari API:', response.data)
-
-    // Tampilkan notifikasi sukses
     showSnackbar('Discount berhasil ditambahkan.', 'success')
-    await fetchData() // Refresh data
+    await fetchData() 
   } catch (error) {
     console.error('Error saat menyimpan diskon:', error)
     
-    // Tampilkan notifikasi error
     showSnackbar(
       error.response?.data?.message || 'Gagal menambahkan discount.', 
       'error'
@@ -154,18 +150,19 @@ const handleSaveDiskon = async (data) => {
   }
 }
 
+// Fungsi untuk edit data diskon
 const handleEdit = (item) => {
   alert(`Edit: ${item.nama}`)
   console.log('Data asli:', item.rawData)
 }
 
+// Fungsi untuk DELETE data ke api
 const handleDelete = async () => {
   if (selected.value.length === 0) return
   showModal.value = false
   deleting.value = true
 
   try {
-    // Hapus setiap item yang dipilih
     const deletePromises = selected.value.map(id => 
       fetch(`${baseUrl.value}/${id}`, {
         method: 'DELETE'
@@ -174,13 +171,12 @@ const handleDelete = async () => {
     
     const results = await Promise.all(deletePromises)
     
-    // Cek apakah ada yang gagal
     const failedCount = results.filter(r => !r.ok).length
     
     if (failedCount === 0) {
       showSnackbar(`${selected.value.length} diskon berhasil dihapus`, 'success')
       selected.value = []
-      await fetchData() // Refresh data
+      await fetchData() 
     } else {
       showSnackbar(`Gagal menghapus ${failedCount} diskon`, 'error')
     }
@@ -227,14 +223,12 @@ onMounted(() => {
     <v-main class="pa-6">
       <v-card rounded="xl">
        <v-card-title class="d-flex align-start">
-            <!-- KIRI: Judul + Total -->
             <div class="d-flex flex-column flex-grow-1 mr-4">
                 <span class="text-h6">Daftar Diskon</span>
                 <span class="text-body-2 text-grey">
                 Total Diskon: {{ items.length }}
                 </span>
                 
-                <!-- FORM SEARCHING & API SELECTOR -->
                 <div class="search-container mt-4 d-flex gap-2">
                   <v-text-field
                     v-model="searchQuery"
@@ -261,7 +255,6 @@ onMounted(() => {
                     </template>
                   </v-text-field>
 
-                  <!-- API Selector Button -->
                   <v-btn
                     variant="outlined"
                     rounded="xl"
@@ -274,7 +267,6 @@ onMounted(() => {
                   </v-btn>
                 </div>
 
-                <!-- API Configuration Panel -->
                 <v-expand-transition>
                   <v-card
                     v-if="showApiConfig"
@@ -302,14 +294,11 @@ onMounted(() => {
                 </v-expand-transition>
             </div>
 
-            <!-- KANAN: Tombol -->
             <div>
-                <!-- Tombol normal ketika tidak ada yang dipilih -->
                 <div v-if="selected.length === 0">
                  <DiskonModal ref="diskonModalRef" :existing-discounts="discounts" @save="handleSaveDiskon"/>
             </div>
 
-                <!-- Tombol hapus & batalkan ketika ada yang dipilih -->
                 <div v-else class="d-flex gap-2">
                 <v-btn
                     color="error"
