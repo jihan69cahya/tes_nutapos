@@ -13,6 +13,7 @@ const loading = ref(false)
 const deleting = ref(false)
 const searchQuery = ref('')
 const { showSnackbar } = useSnackbar();
+const diskonModalRef = ref(null)
 
 const showApiConfig = ref(false)
 const apiUrlInput = ref('')
@@ -152,8 +153,31 @@ const handleSaveDiskon = async (data) => {
 
 // Fungsi untuk edit data diskon
 const handleEdit = (item) => {
-  alert(`Edit: ${item.nama}`)
-  console.log('Data asli:', item.rawData)
+  diskonModalRef.value.openEdit(item)
+}
+
+// Fungsi untuk update data diskon ke API
+const handleUpdateDiskon = async (id, data) => {
+  try {
+    const payload = {
+      nama_diskon: data.namaDiskon,
+      diskon: data.diskon.toString(),
+      tipe: data.type,
+      created_at: new Date().toISOString().slice(0, 19).replace('T', ' ')
+    }
+    
+    const response = await axios.put(`${baseUrl.value}/${id}`, payload)
+
+    showSnackbar('Discount berhasil diupdate.', 'success')
+    await fetchData() 
+  } catch (error) {
+    console.error('Error saat mengupdate diskon:', error)
+    
+    showSnackbar(
+      error.response?.data?.message || 'Gagal mengupdate discount.', 
+      'error'
+    )
+  }
 }
 
 // Fungsi untuk DELETE data ke api
@@ -296,7 +320,7 @@ onMounted(() => {
 
             <div>
                 <div v-if="selected.length === 0">
-                 <DiskonModal ref="diskonModalRef" :existing-discounts="discounts" @save="handleSaveDiskon"/>
+                 <DiskonModal ref="diskonModalRef" :existing-discounts="discounts" @save="handleSaveDiskon" @update="handleUpdateDiskon"/>
             </div>
 
                 <div v-else class="d-flex gap-2">

@@ -9,7 +9,7 @@
 
     <v-card rounded="xl">
       <v-card-title class="d-flex justify-space-between align-center pa-4">
-        <span class="text-h6">Tambah Diskon</span>
+        <span class="text-h6">{{ isEditMode ? 'Edit Diskon' : 'Tambah Diskon' }}</span>
         <v-btn icon="mdi-close" variant="text" @click="closeDialog"></v-btn>
       </v-card-title>
 
@@ -63,7 +63,7 @@
           block
           size="large"
           @click="handleSubmit">
-          Simpan
+          {{ isEditMode ? 'Update' : 'Simpan' }}
         </v-btn>
       </v-card-actions>
     </v-card>
@@ -71,13 +71,14 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, watch } from 'vue'
 
 const dialog = ref(false)
 const form = ref(null)
 const diskonType = ref('persen')
+const isEditMode = ref(false)
+const editId = ref(null)
 
-// Menerima data diskon untuk validasi nama diskon UNIK
 const props = defineProps({
   existingDiscounts: {
     type: Array,
@@ -85,7 +86,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['save'])
+const emit = defineEmits(['save', 'update'])
 
 const formData = reactive({
   namaDiskon: '',
@@ -97,7 +98,25 @@ const errors = reactive({
   diskon: ''
 })
 
-// Validasi form required dan duplikat nama diskon
+// Fungsi untuk membuka modal dalam mode edit
+const openEdit = (item) => {
+  isEditMode.value = true
+  editId.value = item.id
+  formData.namaDiskon = item.nama
+  
+  // Parse nilai diskon dari format yang ditampilkan
+  const rawData = item.rawData
+  formData.diskon = parseFloat(rawData.diskon)
+  diskonType.value = rawData.tipe
+  
+  dialog.value = true
+}
+
+defineExpose({
+  openEdit
+})
+
+// Validasi inputan required dan unik nama diskon
 const validateForm = () => {
   let isValid = true
   
@@ -109,7 +128,11 @@ const validateForm = () => {
     isValid = false
   } else {
     const isDuplicate = props.existingDiscounts.some(
-      discount => discount.nama_diskon.toLowerCase() === formData.namaDiskon.trim().toLowerCase()
+      discount => {
+        const isSameName = discount.nama_diskon.toLowerCase() === formData.namaDiskon.trim().toLowerCase()
+        const isDifferentId = discount._id !== editId.value
+        return isSameName && (isEditMode.value ? isDifferentId : true)
+      }
     )
 
     if (isDuplicate) {
@@ -126,7 +149,7 @@ const validateForm = () => {
   return isValid
 }
 
-// Fungsi untuk menghandle submit dari form
+// Fungsi untuk menghandle submit form tambah dan edit
 const handleSubmit = () => {
   if (validateForm()) {
     const result = {
@@ -135,7 +158,12 @@ const handleSubmit = () => {
       type: diskonType.value
     }
     
-    emit('save', result)
+    if (isEditMode.value) {
+      emit('update', editId.value, result)
+    } else {
+      emit('save', result)
+    }
+    
     closeDialog()
   }
 }
@@ -151,7 +179,15 @@ const resetForm = () => {
   diskonType.value = 'persen'
   errors.namaDiskon = ''
   errors.diskon = ''
+  isEditMode.value = false
+  editId.value = null
 }
+
+watch(dialog, (newVal) => {
+  if (!newVal) {
+    resetForm()
+  }
+})
 </script>
 
 <style scoped>
