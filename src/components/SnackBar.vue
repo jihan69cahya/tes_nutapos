@@ -21,7 +21,7 @@
 </template>
 
 <script setup>
-import { useSnackbar } from '../composables/useSnackbar';
+import { useSnackbar } from '../composables/useSnackBar';
 
 const { snackbar } = useSnackbar();
 </script>
