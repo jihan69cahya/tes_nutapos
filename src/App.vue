@@ -1,6 +1,6 @@
 <script setup>
 import TableDiskon from './components/TableDiskon.vue';
-import AppSnackbar from './components/Snackbar.vue';
+import AppSnackbar from './components/SnackBar.vue';
 </script>
 
 <template>
