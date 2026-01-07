@@ -11,8 +11,14 @@ const discounts = ref([])
 const selected = ref([])
 const loading = ref(false)
 const deleting = ref(false)
+const searchQuery = ref('')
 const { showSnackbar } = useSnackbar();
-const baseUrl = import.meta.env.VITE_API_BASE_URL
+
+// API URL Configuration
+const showApiConfig = ref(false)
+const apiUrlInput = ref('')
+const selectedApi = ref('Kopi Anak Bangsa')
+const baseUrl = ref(import.meta.env.VITE_API_BASE_URL)
 
 const headers = [
   { title: '', key: 'checkbox', sortable: false, width: '50px' },
@@ -21,15 +27,29 @@ const headers = [
   { title: '', key: 'actions', sortable: false, align: 'end' }
 ]
 
+// LOGIKA FILTER SEARCH
+const filteredItems = computed(() => {
+  if (!searchQuery.value || searchQuery.value.trim() === '') {
+    return items.value
+  }
+  
+  const query = searchQuery.value.toLowerCase().trim()
+  
+  return items.value.filter(item => {
+    const namaDiskon = item.nama.toLowerCase()
+    return namaDiskon.includes(query)
+  })
+})
+
 const allSelected = computed({
-  get: () => selected.value.length === items.value.length && items.value.length > 0,
+  get: () => selected.value.length === filteredItems.value.length && filteredItems.value.length > 0,
   set: (value) => {
-    selected.value = value ? items.value.map(item => item.id) : []
+    selected.value = value ? filteredItems.value.map(item => item.id) : []
   }
 })
 
 const someSelected = computed(() => 
-  selected.value.length > 0 && selected.value.length < items.value.length
+  selected.value.length > 0 && selected.value.length < filteredItems.value.length
 )
 
 const formatNilai = (diskon, tipe) => {
@@ -41,10 +61,31 @@ const formatNilai = (diskon, tipe) => {
   return '-'
 }
 
+const handleApiChange = () => {
+  showApiConfig.value = !showApiConfig.value
+  if (showApiConfig.value) {
+    apiUrlInput.value = baseUrl.value
+  }
+}
+
+const applyApiUrl = async () => {
+  if (!apiUrlInput.value.trim()) {
+    showSnackbar('URL API tidak boleh kosong', 'error')
+    return
+  }
+  console.log(apiUrlInput.value.trim());
+  baseUrl.value = apiUrlInput.value.trim()
+  showApiConfig.value = false
+  showSnackbar('URL API berhasil diubah', 'success')
+  
+  // Refresh data dengan URL baru
+  await fetchData()
+}
+
 const fetchData = async () => {
   loading.value = true
   try {
-    const response = await fetch(baseUrl)
+    const response = await fetch(baseUrl.value)
     
     if (!response.ok) {
       throw new Error('Gagal mengambil data')
@@ -95,7 +136,7 @@ const handleSaveDiskon = async (data) => {
     console.log('Payload yang dikirim:', payload)
 
     // POST ke API
-    const response = await axios.post(baseUrl, payload)
+    const response = await axios.post(baseUrl.value, payload)
 
     console.log('Response dari API:', response.data)
 
@@ -126,7 +167,7 @@ const handleDelete = async () => {
   try {
     // Hapus setiap item yang dipilih
     const deletePromises = selected.value.map(id => 
-      fetch(`${baseUrl}/${id}`, {
+      fetch(`${baseUrl.value}/${id}`, {
         method: 'DELETE'
       })
     )
@@ -155,6 +196,10 @@ const handleCancel = () => {
   selected.value = []
 }
 
+const clearSearch = () => {
+  searchQuery.value = ''
+}
+
 const isSelected = (itemId) => selected.value.includes(itemId)
 
 const toggleItem = (itemId) => {
@@ -181,13 +226,80 @@ onMounted(() => {
 
     <v-main class="pa-6">
       <v-card rounded="xl">
-        <v-card-title class="d-flex justify-space-between align-center">
+       <v-card-title class="d-flex align-start">
             <!-- KIRI: Judul + Total -->
-            <div class="d-flex flex-column">
+            <div class="d-flex flex-column flex-grow-1 mr-4">
                 <span class="text-h6">Daftar Diskon</span>
                 <span class="text-body-2 text-grey">
                 Total Diskon: {{ items.length }}
                 </span>
+                
+                <!-- FORM SEARCHING & API SELECTOR -->
+                <div class="search-container mt-4 d-flex gap-2">
+                  <v-text-field
+                    v-model="searchQuery"
+                    label="Cari diskon..."
+                    placeholder="Ketik nama diskon..."
+                    variant="outlined"
+                    density="comfortable"
+                    rounded="xl"
+                    clearable
+                    hide-details
+                    @click:clear="clearSearch"
+                    class="search-field flex-grow-1">
+                    <template v-slot:prepend-inner>
+                      <v-icon color="grey-darken-1">mdi-magnify</v-icon>
+                    </template>
+                    <template v-slot:append-inner v-if="searchQuery">
+                      <v-chip
+                        size="small"
+                        color="primary"
+                        variant="flat"
+                        class="mr-2">
+                        {{ filteredItems.length }} hasil
+                      </v-chip>
+                    </template>
+                  </v-text-field>
+
+                  <!-- API Selector Button -->
+                  <v-btn
+                    variant="outlined"
+                    rounded="xl"
+                    density="comfortable"
+                    @click="handleApiChange"
+                    class="api-selector-btn">
+                    <v-icon start>mdi-coffee</v-icon>
+                    {{ selectedApi }}
+                    <v-icon end>{{ showApiConfig ? 'mdi-chevron-up' : 'mdi-chevron-down' }}</v-icon>
+                  </v-btn>
+                </div>
+
+                <!-- API Configuration Panel -->
+                <v-expand-transition>
+                  <v-card
+                    v-if="showApiConfig"
+                    class="mt-3 pa-4"
+                    variant="outlined"
+                    rounded="lg">
+                    <div class="text-subtitle-2 mb-3">API URL crudcrud.com</div>
+                    <v-text-field
+                      v-model="apiUrlInput"
+                      label="API URL"
+                      placeholder="https://crudcrud.com/api/bc0c.../diskon"
+                      variant="outlined"
+                      density="comfortable"
+                      hide-details
+                      class="mb-3">
+                    </v-text-field>
+                    <v-btn
+                      color="success"
+                      rounded="lg"
+                      @click="applyApiUrl"
+                      block>
+                      Terapkan
+                    </v-btn>
+                  </v-card>
+                </v-expand-transition>
             </div>
 
             <!-- KANAN: Tombol -->
@@ -224,7 +336,7 @@ onMounted(() => {
 
         <v-data-table
           :headers="headers"
-          :items="items"
+          :items="filteredItems"
           :items-per-page="10"
           :loading="loading"
           class="elevation-1">
@@ -280,7 +392,17 @@ onMounted(() => {
           <template v-slot:no-data>
             <div class="text-center pa-4">
               <v-icon size="48" color="grey">mdi-database-off</v-icon>
-              <p class="mt-2">Tidak ada data</p>
+              <p class="mt-2">
+                {{ searchQuery ? 'Tidak ada hasil pencarian' : 'Tidak ada data' }}
+              </p>
+              <v-btn
+                v-if="searchQuery"
+                color="primary"
+                variant="text"
+                @click="clearSearch"
+                class="mt-2">
+                Hapus Pencarian
+              </v-btn>
             </div>
           </template>
         </v-data-table>
@@ -305,5 +427,33 @@ onMounted(() => {
 
 .gap-2 {
   gap: 8px;
+}
+
+.search-container {
+  width: 100%;
+  max-width: 600px;
+}
+
+.search-field {
+  background-color: white;
+  border-radius: 12px;
+}
+
+.search-field :deep(.v-field) {
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.search-field :deep(.v-field--focused) {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.search-field :deep(.v-field__input) {
+  padding: 8px 0;
+}
+
+.api-selector-btn {
+  min-width: 200px;
+  white-space: nowrap;
 }
 </style>
