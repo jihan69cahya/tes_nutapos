@@ -31,6 +31,7 @@
             <div class="d-flex align-center ga-2">
               <v-text-field
                 v-model="formData.diskon"
+                placeholder="Masukkan diskon"
                 type="number"
                 variant="outlined"
                 density="comfortable"
@@ -90,7 +91,7 @@ const emit = defineEmits(['save', 'update'])
 
 const formData = reactive({
   namaDiskon: '',
-  diskon: 0
+  diskon: ''
 })
 
 const errors = reactive({
@@ -175,7 +176,7 @@ const closeDialog = () => {
 
 const resetForm = () => {
   formData.namaDiskon = ''
-  formData.diskon = 0
+  formData.diskon = ''
   diskonType.value = 'persen'
   errors.namaDiskon = ''
   errors.diskon = ''
