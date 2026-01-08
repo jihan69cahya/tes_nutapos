@@ -58,7 +58,7 @@ const someSelected = computed(() =>
 // Format nilai untuk kolom diskon tabel
 const formatNilai = (diskon, tipe) => {
   if (tipe === 'rupiah') {
-    return `Rp ${diskon.toLocaleString('id-ID')}`
+    return `Rp ${Number(diskon || 0).toLocaleString('id-ID')}`;
   } else if (tipe === 'persen') {
     return `${diskon}%`
   }
